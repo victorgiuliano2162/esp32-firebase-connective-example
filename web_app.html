@@ -16,7 +16,17 @@
         display: flex;
         justify-content: space-between;
         width: 50%;
-        margin: 50% auto;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: #fff;
+        box-shadow: 0 20px 20px rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+      }
+      .data-container2 {
+        display: flex;
+        justify-content: center;
+        width: 50%;
+        margin: 20px auto;
         padding: 20px;
         background-color: #fff;
         box-shadow: 0 20px 20px rgba(0, 0, 0, 0.1);
@@ -52,7 +62,6 @@
   </head>
   <body>
     <div class="data-head">DHT Sensor realtime readings</div>
-
     <div class="data-container">
       <div class="data-item">
         <h2>Temperature</h2>
@@ -61,6 +70,12 @@
       <div class="data-item">
         <h2>Humidity</h2>
         <p class="value" id="humidity"></p>
+      </div>
+    </div>
+    <div class="data-container2">
+      <div class="data-item">
+        <h2>Horário</h2>
+        <p class="value" id="tmstmp"></p>
       </div>
     </div>
 
@@ -81,7 +96,7 @@
         messagingSenderId: "134008705907",
         appId: "1:134008705907:web:eecb5add14929fb544eb06",
         measurementId: "G-X7JB1E8CWQ",
-        databaseURL: "https://esp32-umidty-sensor-default-rtdb.firebaseio.com"
+        databaseURL: "https://esp32-umidty-sensor-default-rtdb.firebaseio.com",
       };
 
       const app = initializeApp(firebaseConfig);
@@ -91,6 +106,7 @@
 
       const databaseRefHumidity = ref(database, "sensors/humidity");
       const databaseRefTemperature = ref(database, "sensors/temperature");
+      const databaseRefTimestamp = ref(database, "sensors/timestamp");
 
       onValue(databaseRefHumidity, (snapshot) => {
         const humi = snapshot.val();
@@ -102,14 +118,17 @@
         document.getElementById("temperature").innerHTML = temp + "ºC";
       });
 
-    //   databaseRefHumidity.on("value", function (getData1) {
-    //     var humi = getData1.val();
-    //     document.getElementById("humidity").innerHTML = humi + "%";
-    //   });
-    //   databaseRefTemperature.on("value", function (getData2) {
-    //     var temp = getData1.val();
-    //     document.getElementById("temperature").innerHTML = humi + "ºC";
-    //   });
+      onValue(databaseRefTimestamp, (snapshot) => {
+        const timestamp = snapshot.val();
+        let tmstp = new Date(timestamp.replace(" ", "T"));
+        const dia = tmstp.getDate();
+        const mes = tmstp.getMonth() + 1;
+        const ano = tmstp.getFullYear();
+        const hora = tmstp.getHours();
+        const minuto = tmstp.getMinutes();
+        document.getElementById("tmstmp").innerHTML = `${hora}:${minuto} ${dia}/${mes}/${ano}`;
+      });
+
     </script>
   </body>
 </html>
