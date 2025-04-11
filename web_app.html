@@ -74,7 +74,7 @@
     </div>
     <div class="data-container2">
       <div class="data-item">
-        <h2>Horário</h2>
+        <h2>Horário da última medição</h2>
         <p class="value" id="tmstmp"></p>
       </div>
     </div>
@@ -126,7 +126,8 @@
         const ano = tmstp.getFullYear();
         const hora = tmstp.getHours();
         const minuto = tmstp.getMinutes();
-        document.getElementById("tmstmp").innerHTML = `${hora}:${minuto} ${dia}/${mes}/${ano}`;
+        let newMonth = mes < 10 ? `0${mes}`: mes;
+        document.getElementById("tmstmp").innerHTML = `${hora}:${minuto} ${dia}/${newMonth}/${ano}`;
       });
 
     </script>
