@@ -1,8 +1,8 @@
-#include <Arduino.h>
+#include <Arduino.h> 
 #include <WiFi.h>              
-#include <Firebase_ESP_Client.h>
-#include "addons/TokenHelper.h"
-#include "addons/RTDBHelper.h"
+#include <Firebase_ESP_Client.h> 
+#include "addons/TokenHelper.h" 
+#include "addons/RTDBHelper.h" 
 #include <DHT.h>
 
 #define WIFI_SSID "brisa-pitoco" 
@@ -19,7 +19,7 @@ FirebaseAuth auth;
 FirebaseConfig config;
 
 unsigned long sendDataPrevMillis = 0;
-bool signupOK = false;                    
+bool signupOK = false;                     //since we are doing an anonymous sign in 
 
 void setup(){
   Serial.begin(115200);
@@ -47,7 +47,8 @@ void setup(){
     Serial.printf("%s\n", config.signer.signupError.message.c_str());
   }
 
-  config.token_status_callback = tokenStatusCallback; 
+  /* Assign the callback function for the long running token generation task */
+  config.token_status_callback = tokenStatusCallback; //see addons/TokenHelper.h
   
   Firebase.begin(&config, &auth);
   Firebase.reconnectWiFi(true);
@@ -66,15 +67,17 @@ String getFormattedTimestamp() {
   return String(timestamp);
 }
 
+FirebaseJson json;
+
 void loop(){
 
   float temperature = dht_sensor.readTemperature();
   float humidity = dht_sensor.readHumidity();
 
   
-  if (Firebase.ready() && signupOK && (millis() - sendDataPrevMillis > 15000 || sendDataPrevMillis == 0)){
+  if (Firebase.ready() && signupOK && (millis() - sendDataPrevMillis > 300000 || sendDataPrevMillis == 0)){
     sendDataPrevMillis = millis();
-   
+    
     if (Firebase.RTDB.setFloat(&fbdo, "/sensors/temperature", temperature)){
       Serial.println("PASSED");
       Serial.println("PATH: " + fbdo.dataPath());
@@ -88,20 +91,32 @@ void loop(){
       Serial.print("Temperature : ");
       Serial.println(temperature);
     }
-   
+
     if (Firebase.RTDB.setFloat(&fbdo, "/sensors/humidity", humidity)){
       Serial.println("PASSED");
       Serial.println("PATH: " + fbdo.dataPath());
       Serial.println("TYPE: " + fbdo.dataType());
       Serial.print("Humidity : ");
-      Serial.print(humidity);
+      Serial.println(humidity);
     }
     else {
       Serial.println("FAILED");
       Serial.println("REASON: 1 " + fbdo.errorReason());
       Serial.print("Humidity : ");
-      Serial.print(humidity);
+      Serial.println(humidity);
     }
+
+    String timestamp = getFormattedTimestamp();
+    json.set("temperature", temperature);
+    json.set("humidity", humidity);
+    json.set("timestamp", timestamp);
+    String newPath = "sensors/" + timestamp;
+    Firebase.RTDB.setString(&fbdo, "sensors/timestamp", timestamp);
+    Firebase.RTDB.pushJSON(&fbdo, newPath, &json);
+    if (Firebase.RTDB.pushJSON(&fbdo, "sensors_data/sensor1", &json)) {
+    Serial.println("Dados pushados com sucesso em: " + newPath);
+} else {
+    Serial.println("Erro ao push JSON: " + fbdo.errorReason());
+}
   }
 }
-
