@@ -5,63 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="shortcut icon" href="#" />
     <title>DHT sensor readings</title>
-    <style>
-      body {
-        background-color: #f5f5f5;
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-      }
-      .data-container {
-        display: flex;
-        justify-content: space-between;
-        width: 50%;
-        margin: 20px auto;
-        padding: 20px;
-        background-color: #fff;
-        box-shadow: 0 20px 20px rgba(0, 0, 0, 0.1);
-        border-radius: 10px;
-      }
-      .data-container2 {
-        display: flex;
-        justify-content: center;
-        width: 50%;
-        margin: 20px auto;
-        padding: 20px;
-        background-color: #fff;
-        box-shadow: 0 20px 20px rgba(0, 0, 0, 0.1);
-        border-radius: 10px;
-      }
-      .data-item {
-        text-align: center;
-      }
-      .data-item h2 {
-        font-size: 24px;
-        font-weight: bold;
-        margin-bottom: 10px;
-      }
-
-      .data-item p {
-        font-size: 40px;
-        font-weight: bold;
-        color: #6eb7ff;
-      }
-      .data-head {
-        margin: auto;
-        width: 50%;
-        text-align: center;
-        font-size: 45px;
-        font-weight: bold;
-        margin: 50px auto;
-        padding: 20px;
-        background-color: #fff;
-        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-        border-radius: 20px;
-      }
-    </style>
+    <link rel="stylesheet" href="style.css">
+    <script type="module" src="script.js"></script>
   </head>
   <body>
-    <div class="data-head">DHT Sensor realtime readings</div>
+    <div class="data-head">Medições de humidade e temperatura</div><div class="data-container2">
+      <div class="data-item">
+        <h3>Material utilizado</h3>
+        <span>
+          <ul>ESP32 devkit v1</ul>
+          <ul>Sensor de temperatura e humidade DHT11</ul>
+          <ul>Firebase para armazenamento de dados</ul>
+          <a rel="stylesheet" href="https://github.com/victorgiuliano2162/esp32-firebase-connective-example">
+        </span>
+
+      </div>
+      <div class="data-item">
+        
+      </div>
+    </div>
+    <div class="data-container2">
+      <div class="data-item">
+        <h2>Horário da última medição</h2>
+        <p class="value" id="tmstmp"></p>
+      </div>
+    </div>
     <div class="data-container">
       <div class="data-item">
         <h2>Temperature</h2>
@@ -79,57 +47,18 @@
       </div>
     </div>
 
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-      import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-analytics.js";
-      import {
-        getDatabase,
-        ref,
-        onValue,
-      } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
-
-      const firebaseConfig = {
-        apiKey: "AIzaSyDLTaSJJSQiB-5vFgtSzGzoxSFlWDxDof8",
-        authDomain: "esp32-umidty-sensor.firebaseapp.com",
-        projectId: "esp32-umidty-sensor",
-        storageBucket: "esp32-umidty-sensor.firebasestorage.app",
-        messagingSenderId: "134008705907",
-        appId: "1:134008705907:web:eecb5add14929fb544eb06",
-        measurementId: "G-X7JB1E8CWQ",
-        databaseURL: "https://esp32-umidty-sensor-default-rtdb.firebaseio.com",
-      };
-
-      const app = initializeApp(firebaseConfig);
-      const analytics = getAnalytics(app);
-
-      const database = getDatabase(app);
-
-      const databaseRefHumidity = ref(database, "sensors/humidity");
-      const databaseRefTemperature = ref(database, "sensors/temperature");
-      const databaseRefTimestamp = ref(database, "sensors/timestamp");
-
-      onValue(databaseRefHumidity, (snapshot) => {
-        const humi = snapshot.val();
-        document.getElementById("humidity").innerHTML = humi + "%";
-      });
-
-      onValue(databaseRefTemperature, (snapshot) => {
-        const temp = snapshot.val();
-        document.getElementById("temperature").innerHTML = temp + "ºC";
-      });
-
-      onValue(databaseRefTimestamp, (snapshot) => {
-        const timestamp = snapshot.val();
-        let tmstp = new Date(timestamp.replace(" ", "T"));
-        const dia = tmstp.getDate();
-        const mes = tmstp.getMonth() + 1;
-        const ano = tmstp.getFullYear();
-        const hora = tmstp.getHours();
-        const minuto = tmstp.getMinutes();
-        let newMonth = mes < 10 ? `0${mes}`: mes;
-        document.getElementById("tmstmp").innerHTML = `${hora}:${minuto} ${dia}/${newMonth}/${ano}`;
-      });
-
-    </script>
+    <div class="data-container">
+      <div>
+        <button id="toggle-table" class="button-toggle" class="table-toggle">
+      </div>
+        Mostrar Histórico 
+      </button>
+      <div class="table-container">
+        <table>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+    </div>
+    <footer></footer>
   </body>
 </html>
