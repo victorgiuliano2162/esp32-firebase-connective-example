@@ -27,6 +27,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const databaseRefTemperature = ref(database, "sensors/temperature");
   const databaseRefTimestamp = ref(database, "sensors/timestamp");
   const databaseRefJson = ref(database, "sensors_data/sensor1");
+  const databaseRefluminosity = ref(database, "sensors_data/sensor2");
+  
+  
 
   const toggleButton = document.getElementById("toggle-table");
   const tableContainer = document.querySelector(".table-container");
@@ -40,6 +43,15 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       toggleButton.textContent = "Mostrar Histórico";
     }
+  });
+
+  onValue(databaseRefluminosity, (snapshot) => {
+    const lume = snapshot.val();
+    const dataArray = Array.isArray(lume)? lume: Object.values(lume);
+    
+    const info = dataArray[dataArray.length - 1];
+    let lux = info.lux.toFixed(2);
+    document.getElementById('luminosity').innerHTML = `${lux} lx`;
   });
 
   onValue(databaseRefHumidity, (snapshot) => {
