@@ -28,8 +28,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const databaseRefTimestamp = ref(database, "sensors/timestamp");
   const databaseRefJson = ref(database, "sensors_data/sensor1");
   const databaseRefluminosity = ref(database, "sensors_data/sensor2");
-  
-  
 
   const toggleButton = document.getElementById("toggle-table");
   const tableContainer = document.querySelector(".table-container");
@@ -37,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
   toggleButton.addEventListener("click", () => {
     tableContainer.classList.toggle("active");
 
-    // Altera o ícone do botão  
+    // Altera o ícone do botão
     if (tableContainer.classList.contains("active")) {
       toggleButton.textContent = "Ocultar Histórico";
     } else {
@@ -47,11 +45,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   onValue(databaseRefluminosity, (snapshot) => {
     const lume = snapshot.val();
-    const dataArray = Array.isArray(lume)? lume: Object.values(lume);
-    
+    const dataArray = Array.isArray(lume) ? lume : Object.values(lume);
+
     const info = dataArray[dataArray.length - 1];
     let lux = info.lux.toFixed(2);
-    document.getElementById('luminosity').innerHTML = `${lux} lx`;
+    document.getElementById("luminosity").innerHTML = `${lux} lx`;
   });
 
   onValue(databaseRefHumidity, (snapshot) => {
@@ -101,4 +99,87 @@ document.addEventListener("DOMContentLoaded", () => {
       tableBody.appendChild(row);
     });
   });
+
+  onValue(databaseRefJson, (snapshot) => {
+    const firebaseJson = snapshot.val();
+    const dataArray = Array.isArray(firebaseJson)
+      ? firebaseJson
+      : Object.values(firebaseJson);
+
+    console.log(dataArray);
+
+    const timestamps = dataArray.map(item => item.timestamp || "Sem data");
+    const temperatures = dataArray.map(item => item.temperature);
+    const humidities = dataArray.map(item => item.humidity);
+
+    const avgTemps = temperatures.reduce((sum, data) => sum + data.temperature, 0) / dataArray.length;
+    const avgHumidity = humidities.reduce((s, d) => s + d.humidity, 0) / dataArray.length;
+    
+    const tempChartEl = document.getElementById("tempChart");
+    const humidityChartEl = document.getElementById("humidityChart");
+
+
+
+    new Chart(document.getElementById("tempChart"), {
+      type: "line",
+      data: {
+        labels: timestamps,
+        datasets: [
+          {
+            label: "Temperatura Média",
+            data: temperatures,
+            borderColor: "rgb(255, 99, 132)",
+            backgroundColor: "rgba(255, 99, 132, 0.2)",
+            tension: 0.3,
+            fill: true,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            title: {
+              display: true,
+              text: "Temperatura (°C)",
+            },
+          },
+        },
+      },
+    });
+
+    // Configuração do gráfico de Umidade
+    new Chart(document.getElementById("humidityChart"), {
+      type: "line",
+      data: {
+        labels: timestamps,
+        datasets: [
+          {
+            label: "Umidade Média",
+            data: humidities,
+            borderColor: "rgb(54, 162, 235)",
+            backgroundColor: "rgba(54, 162, 235, 0.2)",
+            tension: 0.3,
+            fill: true,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            title: {
+              display: true,
+              text: "Umidade (%)",
+            },
+            min: 0,
+            max: 100,
+          },
+        },
+      },
+    });
+  });
+
+  //end of "main" function
 });
+
