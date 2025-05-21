@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="shortcut icon" href="#" />
+    <title>DHT sensor readings</title>
+    <link rel="stylesheet" href="/style.css">
+    <script type="module" src="/script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <div class="data-head">Medições de umidade e temperatura</div>
+        <div class="data-container2">
+      <div class="data-item2">
+        <h2>Horário da última medição</h2>
+        <p class="value" id="tmstmp"></p>
+      </div>
+    </div>
+    <div class="data-container">
+      <div class="data-item">
+        <h2>Temperatura</h2>
+        <p class="value" id="temperature"></p>
+      </div>
+      <div class="data-item">
+        <h2>Umidade</h2>
+        <p class="value" id="humidity"></p>
+      </div>
+      <div class="data-item">
+        <h2>Iluminação</h2>
+        <p class="value" id="luminosity"></p>
+      </div>
+    </div>
+    <div class="data-container">
+  
+      <div class="chart-container">
+          <h2>Temperatura Média Diária</h2>
+          <canvas id="tempChart"></canvas>
+      </div>
+    </div>
+
+    <div class="data-container">
+      <div class="chart-container">
+        <h2>Umidade Média Diária</h2>
+        <canvas id="humidityChart"></canvas>
+    </div>
+    </div>
+
+    <div class="data-container">
+      <div>
+        <button id="toggle-table" class="button-toggle" class="table-toggle">
+      </div>
+        Mostrar Histórico 
+      </button>
+      <div class="table-container">
+        <table>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="data-container2">
+      <div class="data-item">
+        <h3>Material utilizado</h3>
+        <span>
+          <ul>ESP32 devkit v1</ul>
+          <ul>Sensor de temperatura e humidade DHT11</ul>
+          <ul>Firebase para armazenamento de dados</ul>
+          <a href="https://github.com/victorgiuliano2162/esp32-firebase-connective-example">
+          Link para o repositório</a>
+        </span>
+      </div>
+    </div>
+    <footer></footer>
+  </body>
+</html>
