@@ -84,17 +84,13 @@ document.addEventListener("DOMContentLoaded", () => {
       const row = document.createElement("tr");
       row.style.borderBottom = "1px solid #eee";
       row.style.padding = "10px";
-
+      const date = new Date(e.timestamp.replace(" ", "T"));
+      const pad = (n) => n.toString().padStart(2, "0");
       row.innerHTML = `
-        <td style="padding: 12px; color: #6eb7ff; font-weight: bold;">Horário ${new Date(
-          e.timestamp.replace(" ", "T")
-        ).toLocaleString()}</td>
-        <td style="padding: 12px; color: #6eb7ff; font-weight: bold;">Temperatura ${
-          e.temperature
-        }ºC</td>
-        <td style="padding: 12px; color: #6eb7ff; font-weight: bold;">Humidade ${
-          e.humidity
-        }%</td>`;
+        <td style="padding: 12px; color: #6eb7ff; font-weight: bold;">${pad(date.getHours())}:${pad(date.getMinutes())} ${pad(date.getDate())}/${pad(
+      date.getMonth() + 1)}/${date.getFullYear()}</td>
+        <td style="padding: 12px; color: #6eb7ff; font-weight: bold;">${e.temperature}ºC</td>
+        <td style="padding: 12px; color: #6eb7ff; font-weight: bold;">${e.humidity}%</td>`;
 
       tableBody.appendChild(row);
     });
