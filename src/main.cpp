@@ -38,9 +38,21 @@ bool signupOK = false;
 unsigned long lastUploadTime = 0; 
 const unsigned long uploadInterval = 5 * 60 * 1000;
 
+char* free_heap;
+char* min_free_heap;
 
-uint32_t totalBytes;
-uint32_t usedBytes;
+float total_memory;
+float used_storage;
+
+void logMemory() {
+  json.clear();
+  uint32_t free_heap = ESP.getFreeHeap();
+  uint32_t min_free_heap = ESP.getMinFreeHeap();
+
+  json.set("free_heap", free_heap / 1048576.0);
+  json.set("min_free_heap", min_free_heap / 1048576.0);
+  json.set("used_storage", used_storage);
+}
 
 void setupDefaultRoutes() {
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -167,6 +179,12 @@ void upload_data_fb() {
     if (Firebase.RTDB.pushJSON(&fbdo, "sensors_data/sensor1", &json)) {
       Serial.println("Json enviado com sucesso");
     }
+
+    logMemory();
+
+    if (Firebase.RTDB.pushJSON(&fbdo, "board_data", &json)) {
+      Serial.println("Dados da placa enviados com sucesso");
+    }
   }
 }
 
@@ -193,16 +211,16 @@ void setup(){
 
   ThingSpeak.begin(client);
 
-  totalBytes = SPIFFS.totalBytes();
-  usedBytes = SPIFFS.usedBytes();
+  total_memory = SPIFFS.totalBytes();
+  used_storage = SPIFFS.usedBytes();
   
-  float totalMB = (float)totalBytes / 1048576.0;
-  float usedMB = (float)usedBytes / 1048576.0;
-  float freeMB = (float)(totalBytes - usedBytes) / 1048576.0;
+  total_memory = total_memory / 1048576.0;
+  used_storage = (float)used_storage / 1048576.0;
+  float free_memory = (total_memory - used_storage) / 1048576.0;
 
-  Serial.printf("Espaço total (SPIFFS): %.2f MB\n", totalMB);
-  Serial.printf("Espaço usado: %.2f MB\n", usedMB);
-  Serial.printf("Espaço livre: %.2f MB\n", freeMB);
+  Serial.printf("Espaço total (SPIFFS): %.2f MB\n", total_memory);
+  Serial.printf("Espaço usado: %.2f MB\n", used_storage);
+  Serial.printf("Espaço livre: %.2f MB\n", free_memory);
 
 }
 
