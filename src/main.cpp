@@ -48,15 +48,37 @@ char* min_free_heap;
 float total_memory;
 float used_storage;
 
+
+
+void turn_on_log() {
+
+  if (Firebase.ready() && signupOK) {
+    if (Firebase.RTDB.setString(&fbdo, "board_status/log/turn_on", getFormattedTimestamp())){
+      Serial.println("Horário de inicialização enviado");
+    }
+  }
+}
+
 const char* getFormattedTimestamp() {
+  configTime(-3 * 3600, 0, "pool.ntp.org");
   static char timestamp[20];
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo)) {
+    Serial.println("Falha ao obter tempo local. Razões possíveis:");
     return "Erro";
   }
 
   strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", &timeinfo);
   return timestamp;
+}
+
+void error_log(const char* err) {
+  json.clear();
+  json.set("err:", err);
+  json.set("timestamp", getFormattedTimestamp());
+  if(Firebase.RTDB.pushJSON(&fbdo, "board_status/log/error", &json)) {
+    Serial.println("Log de erro enviado para o Firebase");
+  }
 }
 
 void logMemory() {
@@ -72,7 +94,7 @@ void logMemory() {
   json.set("min_free_heap", min_free_heap_str);
   json.set("timestamp", getFormattedTimestamp());
 
-  if (Firebase.RTDB.pushJSON(&fbdo, "board_status", &json)) {
+  if (Firebase.RTDB.pushJSON(&fbdo, "board_status/memory_usage", &json)) {
   Serial.println("Dados da placa enviados com sucesso");
   }
 }
@@ -118,6 +140,7 @@ void autoConnect() {
 }
 
 void wifi_connect(const char* ssid, const char* passw) {
+  WiFi.disconnect();
   IPAddress local_ip(192, 168, 0, 100);
   IPAddress gateway(192, 168, 0, 1);
   IPAddress subnet(255, 255, 255, 0);
@@ -136,7 +159,7 @@ void wifi_connect(const char* ssid, const char* passw) {
     Serial.println(WiFi.localIP());
   }
 
-
+  configTime(-3 * 3600, 0, "pool.ntp.org");
 }
 
 //Lista e imprime os itens gravados na memória da esp
@@ -154,8 +177,11 @@ void getLittleFSFilesList() {
     } 
   } else {
       Serial.println("LittleFS Mount Failed");
+      error_log("LittleFS Mount Failed");
     }
 }
+
+
 
 void upload_data_fb() {
 
@@ -165,32 +191,40 @@ void upload_data_fb() {
   float voltage = sensorValue * (3.3 / 4095.0); // Conversão para tensão (ESP32 usa 12 bits ADC)
   float lux = voltage * 95.6; // Ajuste com um fator experimental (valor pode variar)
   
-
-  if (Firebase.ready() && signupOK){
-    json.clear();
-    if (Firebase.RTDB.setFloat(&fbdo, "/sensors/temperature", temperature) && Firebase.RTDB.setInt(&fbdo, "/sensors/humidity", humidity) && Firebase.RTDB.setString(&fbdo, "sensors/timestamp", getFormattedTimestamp())) {
-      Serial.println("Dados de umidade e temperatura enviados com sucesso");
+  if (isnan(temperature) || isnan(humidity)) { 
+    
+    error_log("Erro na leitura dados do sensor "+ DHT_SENSOR_TYPE);
+    delay(2000);
+    ESP.restart();
+  } else {
+    if (Firebase.ready() && signupOK){
+      json.clear();
+      if (Firebase.RTDB.setFloat(&fbdo, "/sensors/temperature", temperature) && Firebase.RTDB.setInt(&fbdo, "/sensors/humidity", humidity) && Firebase.RTDB.setString(&fbdo, "sensors/timestamp", getFormattedTimestamp())) {
+        Serial.println("Dados de umidade e temperatura enviados com sucesso");
     }
      
-    json.set("temperature", temperature);
-    json.set("humidity", humidity);
-    json.set("timestamp", getFormattedTimestamp());
-    json.set("lux", lux);
+      json.set("temperature", temperature);
+      json.set("humidity", humidity);
+      json.set("timestamp", getFormattedTimestamp());
+      json.set("lux", lux);
 
-    Serial.println("Dados enviados:");
-    Serial.print("Temperatura :");
-    Serial.println(temperature);
-    Serial.print("Humidade: ");
-    Serial.println(humidity);
-    Serial.print("Luminiscência ");
-    Serial.println(lux);
-    Serial.print("Às ");
-    Serial.println(getFormattedTimestamp());
+      Serial.println("Dados enviados:");
+      Serial.print("Temperatura :");
+      Serial.println(temperature);
+      Serial.print("Humidade: ");
+      Serial.println(humidity);
+      Serial.print("Luminiscência ");
+      Serial.println(lux);
+      Serial.print("Às ");
+      Serial.println(getFormattedTimestamp());
     
-    if (Firebase.RTDB.pushJSON(&fbdo, "sensors_data/sensor1", &json)) {
-      Serial.println("Json enviado com sucesso");
+      if (Firebase.RTDB.pushJSON(&fbdo, "sensors_data/sensor1", &json)) {
+        Serial.println("Json enviado com sucesso");
+      }
     }
   }
+
+  
 }
 
 
@@ -207,14 +241,7 @@ void display_memory_usage() {
   Serial.printf("Espaço livre: %.2f MB\n", free_memory);
 }
 
-void turn_on_log() {
 
-  if (Firebase.ready() && signupOK) {
-    if (Firebase.RTDB.setString(&fbdo, "turn_on", getFormattedTimestamp())){
-      Serial.println("Horário de inicialização enviado");
-    }
-  }
-}
  
 
 void setup(){
@@ -224,7 +251,6 @@ void setup(){
   
   pinMode(PHOTO_SENSOR, INPUT_PULLUP);
   dht_sensor.begin();
-  configTime(-3 * 3600, 0, "pool.ntp.org");
   
   wifi_connect(SSID, PASSWORD);
   if (!MDNS.begin("dhtreadings")) {
@@ -239,6 +265,7 @@ void setup(){
 
   ThingSpeak.begin(client);
 
+  delay(2000);
   display_memory_usage();
   turn_on_log();
 
