@@ -35,9 +35,13 @@ WiFiClient client;
 WiFiManager wifiManager;
 
 bool signupOK = false; 
-unsigned long lastUploadTime = 0; 
-const unsigned long uploadInterval = 5 * 60 * 1000;
+uint64_t lastUploadTime = 0; 
+uint64_t lastBoardUploadTime = 0;
+const uint32_t uploadInterval = 5 * 60 * 1000;
+const uint32_t uploadBoardInterval = 30 * 60 * 1000;
+char contador = 5;
 
+String timestamp;
 char* free_heap;
 char* min_free_heap;
 
@@ -46,12 +50,20 @@ float used_storage;
 
 void logMemory() {
   json.clear();
-  uint32_t free_heap = ESP.getFreeHeap();
-  uint32_t min_free_heap = ESP.getMinFreeHeap();
 
-  json.set("free_heap", free_heap / 1048576.0);
-  json.set("min_free_heap", min_free_heap / 1048576.0);
-  json.set("used_storage", used_storage);
+  char free_heap_str[10];
+  char min_free_heap_str[10];
+  
+  snprintf(free_heap_str, sizeof(free_heap_str), "%.2f KB", ESP.getFreeHeap() / 1024.0);
+  snprintf(min_free_heap_str, sizeof(min_free_heap_str), "%.2f KB", ESP.getMinFreeHeap() / 1024.0);
+  
+  json.set("free_heap", free_heap_str);
+  json.set("min_free_heap", min_free_heap_str);
+  json.set("timestamp", timestamp);
+
+  if (Firebase.RTDB.pushJSON(&fbdo, "board_status", &json)) {
+  Serial.println("Dados da placa enviados com sucesso");
+  }
 }
 
 void setupDefaultRoutes() {
@@ -153,9 +165,9 @@ void upload_data_fb() {
   uint8_t sensorValue = analogRead(PHOTO_SENSOR);
   float voltage = sensorValue * (3.3 / 4095.0); // Conversão para tensão (ESP32 usa 12 bits ADC)
   float lux = voltage * 95.6; // Ajuste com um fator experimental (valor pode variar)
+  timestamp = getFormattedTimestamp();
 
   if (Firebase.ready() && signupOK){
-    String timestamp = getFormattedTimestamp();
 
     if (Firebase.RTDB.setFloat(&fbdo, "/sensors/temperature", temperature) && Firebase.RTDB.setInt(&fbdo, "/sensors/humidity", humidity) && Firebase.RTDB.setString(&fbdo, "sensors/timestamp", timestamp)) {
       Serial.println("Dados de umidade e temperatura enviados com sucesso");
@@ -178,12 +190,6 @@ void upload_data_fb() {
     
     if (Firebase.RTDB.pushJSON(&fbdo, "sensors_data/sensor1", &json)) {
       Serial.println("Json enviado com sucesso");
-    }
-
-    logMemory();
-
-    if (Firebase.RTDB.pushJSON(&fbdo, "board_data", &json)) {
-      Serial.println("Dados da placa enviados com sucesso");
     }
   }
 }
@@ -231,9 +237,11 @@ void loop(){
     lastUploadTime = millis();  
 
     upload_data_fb();
-    Serial.print("Memória livre: ");
-    Serial.print(esp_get_free_heap_size());
-    Serial.println(" bytes");
+    contador++;
+  }
+
+  if(millis() - lastBoardUploadTime >= uploadBoardInterval || lastBoardUploadTime == 0) {
+    logMemory();
   }
 }
 
