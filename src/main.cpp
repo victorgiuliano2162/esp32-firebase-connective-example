@@ -2,7 +2,7 @@
 #include <ESPAsyncWebServer.h>
 #include "Arduino.h"
 #include "WiFi.h"
-#include "SPIFFS.h"            
+#include "LittleFS.h"            
 #include <Firebase_ESP_Client.h>
 #include "addons/TokenHelper.h"
 #include "addons/RTDBHelper.h"
@@ -47,6 +47,17 @@ char* min_free_heap;
 
 float total_memory;
 float used_storage;
+
+const char* getFormattedTimestamp() {
+  static char timestamp[20];
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) {
+    return "Erro";
+  }
+
+  strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", &timeinfo);
+  return timestamp;
+}
 
 void logMemory() {
   json.clear();
@@ -129,7 +140,7 @@ void wifi_connect(const char* ssid, const char* passw) {
 }
 
 //Lista e imprime os itens gravados na memória da esp
-void getSPIFFSFilesList() {
+void getLittleFSFilesList() {
   if(LittleFS.begin(true)) {
     File root = LittleFS.open("/");
     File file = root.openNextFile();
@@ -146,18 +157,6 @@ void getSPIFFSFilesList() {
     }
 }
 
-
-const char* getFormattedTimestamp() {
-  static char timestamp[20];
-  struct tm timeinfo;
-  if (!getLocalTime(&timeinfo)) {
-    return "Erro";
-  }
-
-  strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", &timeinfo);
-  return timestamp;
-}
-
 void upload_data_fb() {
 
   float temperature = dht_sensor.readTemperature();
@@ -168,7 +167,7 @@ void upload_data_fb() {
   
 
   if (Firebase.ready() && signupOK){
-
+    json.clear();
     if (Firebase.RTDB.setFloat(&fbdo, "/sensors/temperature", temperature) && Firebase.RTDB.setInt(&fbdo, "/sensors/humidity", humidity) && Firebase.RTDB.setString(&fbdo, "sensors/timestamp", getFormattedTimestamp())) {
       Serial.println("Dados de umidade e temperatura enviados com sucesso");
     }
@@ -194,10 +193,34 @@ void upload_data_fb() {
   }
 }
 
+
+void display_memory_usage() {
+  total_memory = LittleFS.totalBytes();
+  used_storage = LittleFS.usedBytes();
+  
+  total_memory = total_memory / 1048576.0;
+  used_storage = (float)used_storage / 1048576.0;
+  float free_memory = (total_memory - used_storage) / 1048576.0;
+
+  Serial.printf("Espaço total (LittleFS): %.2f MB\n", total_memory);
+  Serial.printf("Espaço usado: %.2f MB\n", used_storage);
+  Serial.printf("Espaço livre: %.2f MB\n", free_memory);
+}
+
+void turn_on_log() {
+
+  if (Firebase.ready() && signupOK) {
+    if (Firebase.RTDB.setString(&fbdo, "turn_on", getFormattedTimestamp())){
+      Serial.println("Horário de inicialização enviado");
+    }
+  }
+}
+ 
+
 void setup(){
 
   Serial.begin(115200);
-  getSPIFFSFilesList();
+  getLittleFSFilesList();
   
   pinMode(PHOTO_SENSOR, INPUT_PULLUP);
   dht_sensor.begin();
@@ -208,30 +231,19 @@ void setup(){
     Serial.println("Erro ao iniciar mDNS");
     return;
   }
+
   setupDefaultRoutes();
-  
   firebase_config();
   server.begin();
   Serial.println("Servidor iniciado");
 
-
   ThingSpeak.begin(client);
 
-  total_memory = SPIFFS.totalBytes();
-  used_storage = SPIFFS.usedBytes();
-  
-  total_memory = total_memory / 1048576.0;
-  used_storage = (float)used_storage / 1048576.0;
-  float free_memory = (total_memory - used_storage) / 1048576.0;
-
-  Serial.printf("Espaço total (SPIFFS): %.2f MB\n", total_memory);
-  Serial.printf("Espaço usado: %.2f MB\n", used_storage);
-  Serial.printf("Espaço livre: %.2f MB\n", free_memory);
+  display_memory_usage();
+  turn_on_log();
 
 }
 
-
- 
 void loop(){
 
   if (millis() - lastUploadTime >= uploadInterval || lastUploadTime == 0) {
@@ -247,3 +259,54 @@ void loop(){
 
 
 
+/*
+Para implementação futura:
+void saveSensorData(float temp, float hum) {
+  // Abre o arquivo no modo append (adiciona ao final)
+  File file = LittleFS.open("/dht_data.txt", FILE_APPEND);
+  
+  if (!file) {
+    Serial.println("Falha ao abrir arquivo para escrita!");
+    return;
+  }
+  
+  // Obtém o timestamp atual
+  String timestamp = getTimestamp();
+  
+  // Formata a linha de dados
+  String dataLine = timestamp + "," + String(temp) + "," + String(hum) + "\n";
+  
+  // Escreve no arquivo
+  if (file.print(dataLine)) {
+    Serial.println("Dados salvos: " + dataLine);
+  } else {
+    Serial.println("Falha ao escrever no arquivo!");
+  }
+  
+  file.close(); // Fecha o arquivo
+}
+
+String getTimestamp() {
+  // Simples timestamp baseado no tempo de execução
+  unsigned long seconds = millis() / 1000;
+  unsigned long minutes = seconds / 60;
+  seconds %= 60;
+  return String(minutes) + "m" + String(seconds) + "s";
+}
+
+void listFileContent() {
+  // Função para ler e exibir o conteúdo do arquivo
+  Serial.println("\nConteúdo do arquivo:");
+  
+  File file = LittleFS.open("/dht_data.txt", FILE_READ);
+  if (!file) {
+    Serial.println("Arquivo não encontrado!");
+    return;
+  }
+  while (file.available()) {
+    Serial.write(file.read());
+  }
+
+  file.close();
+}
+*/
