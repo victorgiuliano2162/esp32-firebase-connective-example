@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <ESPmDNS.h>
 #include "ThingSpeak.h"
+#include <LittleFS.h>
 
 #define FIREBASE_API_KEY "AIzaSyDLTaSJJSQiB-5vFgtSzGzoxSFlWDxDof8" 
 #define FIREBASE_URL "https://esp32-umidty-sensor-default-rtdb.firebaseio.com/" 
@@ -41,7 +42,6 @@ const uint32_t uploadInterval = 5 * 60 * 1000;
 const uint32_t uploadBoardInterval = 30 * 60 * 1000;
 char contador = 5;
 
-String timestamp;
 char* free_heap;
 char* min_free_heap;
 
@@ -59,7 +59,7 @@ void logMemory() {
   
   json.set("free_heap", free_heap_str);
   json.set("min_free_heap", min_free_heap_str);
-  json.set("timestamp", timestamp);
+  json.set("timestamp", getFormattedTimestamp());
 
   if (Firebase.RTDB.pushJSON(&fbdo, "board_status", &json)) {
   Serial.println("Dados da placa enviados com sucesso");
@@ -69,15 +69,15 @@ void logMemory() {
 void setupDefaultRoutes() {
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     Serial.println("HTTP_GET chamado");
-    request->send(SPIFFS, "/index.html", "text/html");
+    request->send(LittleFS, "/index.html", "text/html");
   });
 
   server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/style.css", "text/css");
+    request->send(LittleFS, "/style.css", "text/css");
   });
 
   server.on("/script.js", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/script.js", "application/javascript");
+    request->send(LittleFS, "/script.js", "application/javascript");
   });
   Serial.println("Foi chamado HTTP");
 }
@@ -94,8 +94,8 @@ void firebase_config() {
     Serial.printf("%s\n", config.signer.signupError.message.c_str());
   }
 
-  /* Assign the callback function for the long running token generation task */
-  config.token_status_callback = tokenStatusCallback; //see addons/TokenHelper.h
+  config.token_status_callback = tokenStatusCallback; 
+  //see addons/TokenHelper.h
   
   Firebase.begin(&config, &auth);
   Firebase.reconnectWiFi(true);
@@ -130,8 +130,8 @@ void wifi_connect(const char* ssid, const char* passw) {
 
 //Lista e imprime os itens gravados na memória da esp
 void getSPIFFSFilesList() {
-  if(SPIFFS.begin(true)) {
-    File root = SPIFFS.open("/");
+  if(LittleFS.begin(true)) {
+    File root = LittleFS.open("/");
     File file = root.openNextFile();
     while(file) {
       Serial.print("Arquivo ");
@@ -142,20 +142,20 @@ void getSPIFFSFilesList() {
       file = root.openNextFile();
     } 
   } else {
-      Serial.println("SPIFFS Mount Failed");
+      Serial.println("LittleFS Mount Failed");
     }
 }
 
 
-String getFormattedTimestamp() {
+const char* getFormattedTimestamp() {
+  static char timestamp[20];
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo)) {
     return "Erro";
   }
 
-  char timestamp[20];
   strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", &timeinfo);
-  return String(timestamp);
+  return timestamp;
 }
 
 void upload_data_fb() {
@@ -165,17 +165,17 @@ void upload_data_fb() {
   uint8_t sensorValue = analogRead(PHOTO_SENSOR);
   float voltage = sensorValue * (3.3 / 4095.0); // Conversão para tensão (ESP32 usa 12 bits ADC)
   float lux = voltage * 95.6; // Ajuste com um fator experimental (valor pode variar)
-  timestamp = getFormattedTimestamp();
+  
 
   if (Firebase.ready() && signupOK){
 
-    if (Firebase.RTDB.setFloat(&fbdo, "/sensors/temperature", temperature) && Firebase.RTDB.setInt(&fbdo, "/sensors/humidity", humidity) && Firebase.RTDB.setString(&fbdo, "sensors/timestamp", timestamp)) {
+    if (Firebase.RTDB.setFloat(&fbdo, "/sensors/temperature", temperature) && Firebase.RTDB.setInt(&fbdo, "/sensors/humidity", humidity) && Firebase.RTDB.setString(&fbdo, "sensors/timestamp", getFormattedTimestamp())) {
       Serial.println("Dados de umidade e temperatura enviados com sucesso");
     }
      
     json.set("temperature", temperature);
     json.set("humidity", humidity);
-    json.set("timestamp", timestamp);
+    json.set("timestamp", getFormattedTimestamp());
     json.set("lux", lux);
 
     Serial.println("Dados enviados:");
@@ -186,7 +186,7 @@ void upload_data_fb() {
     Serial.print("Luminiscência ");
     Serial.println(lux);
     Serial.print("Às ");
-    Serial.println(timestamp);
+    Serial.println(getFormattedTimestamp());
     
     if (Firebase.RTDB.pushJSON(&fbdo, "sensors_data/sensor1", &json)) {
       Serial.println("Json enviado com sucesso");
@@ -233,14 +233,14 @@ void setup(){
 
  
 void loop(){
-    if (millis() - lastUploadTime >= uploadInterval || lastUploadTime == 0) {
-    lastUploadTime = millis();  
 
+  if (millis() - lastUploadTime >= uploadInterval || lastUploadTime == 0) {
+    lastUploadTime = millis();  
     upload_data_fb();
-    contador++;
   }
 
   if(millis() - lastBoardUploadTime >= uploadBoardInterval || lastBoardUploadTime == 0) {
+    lastBoardUploadTime = millis();
     logMemory();
   }
 }
