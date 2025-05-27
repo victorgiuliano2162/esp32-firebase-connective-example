@@ -24,6 +24,9 @@
 #define PASSWORD "153769ab" 
 #define THINGSPEAK_CHANNEL_NUMBER 1
 #define THINGSPEAK_API_KEY "SADLJKDMSA"
+#define DEEP_SLEEP_INTERVAL 2 * 60 * 1000000 //two minutes in microseconds
+#define UPLOAD_DATA_INTERVAL 5 * 60 * 1000 // 4 minutes
+#define UPLOAD_BOARD_DATA_INTERVAL 30 * 60 * 1000 // 30 minutes
 
 
 DHT dht_sensor(DHT_SENSOR_PIN, DHT_SENSOR_TYPE);
@@ -38,38 +41,32 @@ WiFiManager wifiManager;
 bool signupOK = false; 
 uint64_t lastUploadTime = 0; 
 uint64_t lastBoardUploadTime = 0;
-const uint32_t uploadInterval = 5 * 60 * 1000;
-const uint32_t uploadBoardInterval = 30 * 60 * 1000;
-char contador = 5;
 
+char contador = 5;
 char* free_heap;
 char* min_free_heap;
 
 float total_memory;
 float used_storage;
 
-
-
-void turn_on_log() {
-
-  if (Firebase.ready() && signupOK) {
-    if (Firebase.RTDB.setString(&fbdo, "board_status/log/turn_on", getFormattedTimestamp())){
-      Serial.println("Horário de inicialização enviado");
-    }
-  }
-}
-
 const char* getFormattedTimestamp() {
   configTime(-3 * 3600, 0, "pool.ntp.org");
   static char timestamp[20];
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo)) {
-    Serial.println("Falha ao obter tempo local. Razões possíveis:");
+    Serial.println("Falha ao obter tempo local");
     return "Erro";
   }
-
   strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", &timeinfo);
   return timestamp;
+}
+
+void turn_on_log() {
+  if (Firebase.ready() && signupOK) {
+    if (Firebase.RTDB.pushString(&fbdo, "board_status/log/turn_on", getFormattedTimestamp())){
+      Serial.println("Horário de inicialização enviado");
+    }
+  }
 }
 
 void error_log(const char* err) {
@@ -94,7 +91,7 @@ void logMemory() {
   json.set("min_free_heap", min_free_heap_str);
   json.set("timestamp", getFormattedTimestamp());
 
-  if (Firebase.RTDB.pushJSON(&fbdo, "board_status/memory_usage", &json)) {
+  if (Firebase.RTDB.pushJSON(&fbdo, "board_status/log/memory_usage", &json)) {
   Serial.println("Dados da placa enviados com sucesso");
   }
 }
@@ -185,17 +182,17 @@ void getLittleFSFilesList() {
 
 void upload_data_fb() {
 
-  float temperature = dht_sensor.readTemperature();
   uint8_t humidity = static_cast<uint8_t>(std::min(std::max(dht_sensor.readHumidity(), 0.0f), 255.0f));
   uint8_t sensorValue = analogRead(PHOTO_SENSOR);
+  float temperature = dht_sensor.readTemperature();
   float voltage = sensorValue * (3.3 / 4095.0); // Conversão para tensão (ESP32 usa 12 bits ADC)
   float lux = voltage * 95.6; // Ajuste com um fator experimental (valor pode variar)
   
   if (isnan(temperature) || isnan(humidity)) { 
-    
-    error_log("Erro na leitura dados do sensor "+ DHT_SENSOR_TYPE);
+    std::string err = "Erro na leitura de dados do sensor" + DHT_SENSOR_TYPE;
+    error_log(err.c_str());
     delay(2000);
-    ESP.restart();
+    ESP.deepSleep(DEEP_SLEEP_INTERVAL);
   } else {
     if (Firebase.ready() && signupOK){
       json.clear();
@@ -273,12 +270,12 @@ void setup(){
 
 void loop(){
 
-  if (millis() - lastUploadTime >= uploadInterval || lastUploadTime == 0) {
+  if (millis() - lastUploadTime >= UPLOAD_DATA_INTERVAL || lastUploadTime == 0) {
     lastUploadTime = millis();  
     upload_data_fb();
   }
 
-  if(millis() - lastBoardUploadTime >= uploadBoardInterval || lastBoardUploadTime == 0) {
+  if(millis() - lastBoardUploadTime >= UPLOAD_BOARD_DATA_INTERVAL || lastBoardUploadTime == 0) {
     lastBoardUploadTime = millis();
     logMemory();
   }
