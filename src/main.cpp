@@ -17,13 +17,13 @@
 #define FIREBASE_API_KEY "AIzaSyDLTaSJJSQiB-5vFgtSzGzoxSFlWDxDof8" 
 #define FIREBASE_URL "https://esp32-umidty-sensor-default-rtdb.firebaseio.com/" 
 #define DHT_SENSOR_PIN 4 
-#define DHT_SENSOR_TYPE DHT11 
+#define DHT_SENSOR_TYPE DHT22 
 #define PHOTO_SENSOR 32
 #define LED_LIGHT 2 
 #define SSID "brisa-pitoco" 
 #define PASSWORD "153769ab" 
-#define THINGSPEAK_CHANNEL_NUMBER 1
-#define THINGSPEAK_API_KEY "SADLJKDMSA"
+#define THINGSPEAK_CHANNEL_ID 2980114
+#define THINGSPEAK_API_KEY "M9MVL6JWRZ2VCKDS"
 #define DEEP_SLEEP_INTERVAL 2 * 60 * 1000000 //two minutes in microseconds
 #define UPLOAD_DATA_INTERVAL 5 * 60 * 1000 // 4 minutes
 #define UPLOAD_BOARD_DATA_INTERVAL 30 * 60 * 1000 // 30 minutes
@@ -190,9 +190,9 @@ void upload_data_fb() {
   
   if (isnan(temperature) || isnan(humidity)) { 
     std::string err = "Erro na leitura de dados do sensor" + DHT_SENSOR_TYPE;
-    error_log(err.c_str());
+    //error_log(err.c_str());
     delay(2000);
-    ESP.deepSleep(DEEP_SLEEP_INTERVAL);
+    ESP.restart();
   } else {
     if (Firebase.ready() && signupOK){
       json.clear();
