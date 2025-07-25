@@ -1,4 +1,4 @@
-# E-commerce - Estrutura do Banco de Dados
+# Exemplo de conexão IOT com banco o dados NoSQL Firebase - Realtime Database
 
 Este repositório contém o esquema SQL, procedures e triggers para um sistema de e-commerce e será submetido para a segunda nota da disciplina de Bando de Dados 2.
 
@@ -9,31 +9,45 @@ Este repositório contém o esquema SQL, procedures e triggers para um sistema d
 * `Caio César Leandro Amorim`
 * `Ricardo Francisco Fragoso da Silva`
 
-## Esquema SQL (Tabelas)
+## Hardware utilizado
 
-Principais entidades do banco de dados:
+* **Esp-WROOM-32**: Microcontroladora responsável pelo gerenciamento dos dados e conexão com o banco de dados;
+* **DHT22**: Sensor de úmidade e temperatura;
 
-* **Clientes e Endereços**: Gerenciam dados dos usuários e locais de entrega;
-* **Produtos e Categorias**: Organizam o catálogo de itens, incluindo preço e descrição;
-* **Pedidos e ItensPedido**: Processam as transações de compra, ligando clientes e produtos;
-* **Pagamentos e Avaliações**: Registram pagamentos e o feedback dos clientes sobre os produtos;
-* **Fornecedores**: Gerenciam dados dos fornecedores de produtos;
-* **LogEstoque**: Tabela de auditoria que rastreia todas as alterações de estoque.
+## Estrutura de funcionanmento
 
-## Stored Procedures
+* **: A microcontroladora se conecta à rede wifi;
+* **: A microcontroladora inicia o sensor;
+* **: A microcontroladora coleta os dados;
+* **: A microcontroladora faz o envio dos dados para o banco de dados;
+* **: A página web já estava disponível a partir do momento da conexão da microcontroladora à rede wifi;
+* **: A página web faz uma requisição ao banco de dados;
+* **: Os dados retornados são acessíveis ao usuário no link 192.168.0.100;
 
-As procedures automatizam as operações de negócio:
+## Vídeo com exemplo de funcionamento
+* https://photos.app.goo.gl/pAaGExc3iFkY818B7 
 
-* **`AdicionarPedidoCompleto`**: Cria um pedido com múltiplos itens de forma atômida, validando e atualizando o estoque;
-* **`AdicionarItemAoPedido`**: Adiciona um produto a um pedido já existente;
-* **`AtualizarStatusPedido`**: Altera o status de um pedido (ex: de 'Processando' para 'Enviado');
-* **`AdicionarAvaliacaoProduto`**: Insere uma nova avaliação de produto.
+## Outras técnologias utilizadas
 
+* **`C++ e javascript`**: liguagens de programação que possibilitaram a criação do projeto;
+* **`PlaformIO`**: Framework responsável pela intereção com dispositivos IOT e compilação do código;
+* **`Arduino`**: Framework com diversas função úteis para gerenciar IOT e fluxos de programa;
 
-## Triggers
+## Bibliotecas utlizadas
 
-Aplicam regras de negócio automaticamente:
+### 📚 Bibliotecas utilizadas
 
-* **`tg_impede_estoque_negativo`**: Bloqueia qualquer operação que resulte em estoque negativo;
-* **`tg_log_alteracao_estoque`**: Grava um registro na tabela `LogEstoque` sempre que o estoque de um produto é alterado;
-* **`tg_atualiza_valor_pago_pedido`**: Atualiza o total pago em um pedido a cada novo pagamento registrado (requer uma coluna `ValorPago` na tabela `Pedidos`).
+* **`WiFiManager.h`**: Gerencia conexão Wi-Fi via portal de configuração automático.  
+* **`ESPAsyncWebServer.h`**: Cria servidores web assíncronos para ESP32 com melhor desempenho.  
+* **`Arduino.h`**: Inclui definições básicas para programação em Arduino/ESP.  
+* **`WiFi.h`**: Gerencia conexões Wi-Fi no ESP32.  
+* **`LittleFS.h`**: Sistema de arquivos embutido para armazenar dados na flash.  
+* **`TokenHelper.h`**: Auxilia na criação e gerenciamento de tokens JWT para Firebase.  
+* **`RTDBHelper.h`**: Facilita operações com o Firebase Realtime Database.  
+* **`DHT.h`**: Permite leitura de sensores de temperatura/umidade como DHT11 e DHT22.  
+* **`esp_sleep.h`**: Controla modos de economia de energia e sono profundo no ESP32.  
+* **`DNSServer.h`**: Permite redirecionar requisições DNS, útil para captive portals.  
+* **`cstdint`**: Biblioteca padrão C++ com tipos de dados inteiros com tamanho fixo.  
+* **`ESPmDNS.h`**: Adiciona suporte para mDNS (nome local de dispositivos na rede).  
+* **`ThingSpeak.h`**: Envia dados para a plataforma de IoT ThingSpeak.  
+* **`Firebase_ESP_Client.h`**: Permite autenticar, ler e escrever dados no Firebase via ESP. 
