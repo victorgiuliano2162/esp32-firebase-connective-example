@@ -16,13 +16,13 @@ Este repositório contém o esquema SQL, procedures e triggers para um sistema d
 
 ## Estrutura de funcionanmento
 
-* **: A microcontroladora se conecta à rede wifi;
-* **: A microcontroladora inicia o sensor;
-* **: A microcontroladora coleta os dados;
-* **: A microcontroladora faz o envio dos dados para o banco de dados;
-* **: A página web já estava disponível a partir do momento da conexão da microcontroladora à rede wifi;
-* **: A página web faz uma requisição ao banco de dados;
-* **: Os dados retornados são acessíveis ao usuário no link 192.168.0.100;
+* A microcontroladora se conecta à rede wifi;
+* A microcontroladora inicia o sensor;
+* A microcontroladora coleta os dados;
+* A microcontroladora faz o envio dos dados para o banco de dados;
+* A página web já estava disponível a partir do momento da conexão da microcontroladora à rede wifi;
+* A página web faz uma requisição ao banco de dados;
+* Os dados retornados são acessíveis ao usuário no link 192.168.0.100;
 
 ## Vídeo com exemplo de funcionamento
 * https://photos.app.goo.gl/pAaGExc3iFkY818B7 
