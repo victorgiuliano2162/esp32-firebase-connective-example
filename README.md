@@ -1,14 +1,5 @@
 # Exemplo de conexão IOT com banco o dados NoSQL Firebase - Realtime Database
 
-Este repositório contém o esquema SQL, procedures e triggers para um sistema de e-commerce e será submetido para a segunda nota da disciplina de Bando de Dados 2.
-
-## Integrantes do grupo
-
-* `Victor Giuliano de Freitas Silva`
-* `Arthur Santos Vieira da Silva` 
-* `Caio César Leandro Amorim`
-* `Ricardo Francisco Fragoso da Silva`
-
 ## Hardware utilizado
 
 * **Esp-WROOM-32**: Microcontroladora responsável pelo gerenciamento dos dados e conexão com o banco de dados;
